@@ -597,6 +597,7 @@ class ConversationSummarizer:
         return "\n".join(summary_lines)
 
 # --- AIRephraser Class (with Caching) ---
+# --- AIRephraser Class (with Caching) ---
 class AIRephraser:
     """
     V11: Complete AI analysis for all major conversation topics
@@ -643,7 +644,7 @@ class AIRephraser:
         if not self.client:
             return f"DeepSeek API client not initialized. Cannot analyze {topic_name}."
             
-        if not transcript or len(transcript) < 25:
+        if not transcript or len(transcript) < 2: # Lowered threshold for short inputs like "N/A"
             return "Transcript too short for analysis."
 
         question = ""
@@ -761,56 +762,47 @@ class AIRephraser:
             
         # In the AIRephraser class, update the Property Type section:
         elif topic_name == "Property Type":
-            # --- PROPERTY TYPE CLEANING PROMPT (FOR FORM DATA) ---
+            # --- (MODIFIED) PROPERTY TYPE CLEANING PROMPT ---
             system_prompt = f"""
-            You are an expert real estate data formatter. Your job is to clean and standardize property type descriptions FROM FORM DATA.
+            You are an expert real estate data formatter. Your job is to clean and standardize a raw property type description from a form.
+
+            ### CRITICAL FORMATTING RULES ###
+            1.  **Final Format:** "PropertyType (X unit), Y Bedrooms, Z Bathrooms, SQFT Square Feet"
+            2.  **Commas are required:** Use commas to separate all elements.
+            3.  **No Slashes:** DO NOT use slashes (/).
+            4.  **No Abbreviations:** DO NOT use abbreviations like 'bed', 'beds', 'ba', 'sf', 'sqft'. Always write out "Bedrooms", "Bathrooms", "Square Feet".
+            5.  **Capitalization:** Capitalize property types (e.g., "Single Family", "Duplex", "MultiFamily").
+            6.  **Units:** Always include a unit count in parentheses, e.g., "(1 unit)", "(2 unit)".
+            7.  **Plurals:** Use plurals correctly: "1 Bedroom", "2 Bedrooms", "1 Bathroom", "2.5 Bathrooms".
+            8.  **Vacant Land:** If it is land, the format is "Vacant land, X acres".
+
+            ### GOOD EXAMPLES ###
+            * Input: "Single-family home (3 bed, 1 bath, ~1,344 sq ft)"
+            * Output: "Single Family (1 unit), 3 Bedrooms, 1 Bathroom, 1,344 Square Feet"
             
-            INPUT: Raw property type description from a real estate lead form
-            OUTPUT: Cleaned, standardized property type description
+            * Input: "MultiFamily (2 units), 3 bedrooms and 2 bathrooms, 1,344 sqft"
+            * Output: "MultiFamily (2 unit), 3 Bedrooms, 2 Bathrooms, 1,344 Square Feet"
             
-            CRITICAL FORMATTING RULES:
-            1. Format: "PropertyType (X unit), Y Bedrooms, Z Bathrooms, SQFT Square Feet"
-            2. Always put unit count in parentheses like "(2 unit)"
-            3. Use commas to separate all elements
-            4. Capitalize properly: "Single Family", "Duplex", "MultiFamily", "Apartment complex"
-            5. Use plural/singular correctly: "1 Bedroom", "2 Bedrooms"
-            6. Keep square footage numbers as-is: "1,344" stays "1,344"
-            7. Remove words like: "rental property", "investment", "~", "approx", "approximately"
-            8. If square feet has "each", keep it: "500 Square Feet each"
-            9. Extract numbers from the input text
+            * Input: "4-plex (4 units), 2 beds 1 bath each, 850 sqft"
+            * Output: "4-plex (4 unit), 2 Bedrooms, 1 Bathroom, 850 Square Feet each"
             
-            EXAMPLES:
-            Input: "Single-family home (3 bed, 1 bath, ~1,344 sq ft)"
-            Output: "Single Family (1 unit), 3 Bedrooms, 1 Bathroom, 1,344 Square Feet"
+            * Input: "vacant land, 0.5 acres"
+            * Output: "Vacant land, 0.5 acres"
             
-            Input: "MultiFamily (2 units), 3 bedrooms and 2 bathrooms, 1,344 sqft"
-            Output: "MultiFamily (2 unit), 3 Bedrooms, 2 Bathrooms, 1,344 Square Feet"
+            * Input: "Not specified" or "N/A"
+            * Output: "Not specified in form"
+
+            ### BAD EXAMPLES (WHAT TO AVOID) ###
+            * Input: "SingleFamily/3beds/1bath"
+            * WRONG Output: "SingleFamily/3beds/1bath"
+            * CORRECT Output: "Single Family (1 unit), 3 Bedrooms, 1 Bathroom"
             
-            Input: "Apartment complex (11 units), 1 bedroom and 1 bathroom, 500 sqft each"
-            Output: "Apartment complex (11 unit), 1 Bedroom, 1 Bathroom, 500 Square Feet each"
-            
-            Input: "11 units [ 1 Bed , 1 Bath  . 500 sqft ] each"
-            Output: "Apartment complex (11 unit), 1 Bedroom, 1 Bathroom, 500 Square Feet each"
-            
-            Input: "4-plex (4 units), 2 beds 1 bath each, 850 sqft"
-            Output: "4-plex (4 unit), 2 Bedrooms, 1 Bathroom, 850 Square Feet each"
-            
-            Input: "triplex, 3 bedrooms 2 baths, 1200 sq ft"
-            Output: "Triplex (3 unit), 3 Bedrooms, 2 Bathrooms, 1,200 Square Feet"
-            
-            Input: "single family residence, 4 bed 2.5 bath, 2,200 sq ft"
-            Output: "Single Family (1 unit), 4 Bedrooms, 2.5 Bathrooms, 2,200 Square Feet"
-            
-            Input: "vacant land, 0.5 acres"
-            Output: "Vacant land, 0.5 acres"
-            
-            Input: "Not specified" or "N/A" or empty
-            Output: "Not specified in form"
-            
-            ALWAYS follow the format exactly. If information is missing, use reasonable defaults.
-            If no unit count is specified but it's a multi-unit property, infer it from the type.
-            also the input is not from the above examples , just clean it according to the rules.
-            dont keep it as it is just clean it. no abbrevations , no "/" , etc .....
+            * Input: "sfh 3/1"
+            * WRONG Output: "sfh 3/1"
+            * CORRECT Output: "Single Family (1 unit), 3 Bedrooms, 1 Bathroom"
+
+            You must always reformat the input. Never return the raw input.
+            Always follow the format exactly.
             
             Property type from form to clean:
             {transcript}
@@ -867,7 +859,15 @@ class AIRephraser:
             )
             
             answer = chat_completion.choices[0].message.content.strip()
-                
+            
+            # Post-processing check for the property type
+            if topic_name == "Property Type":
+                # If AI fails and returns slashes, return a safe default
+                if '/' in answer or 'beds' in answer.lower():
+                    # Return the original messy input so the user sees it,
+                    # instead of a confusing error message.
+                    return transcript 
+            
             return answer
 
         except Exception as e:
