@@ -809,6 +809,8 @@ class AIRephraser:
             
             ALWAYS follow the format exactly. If information is missing, use reasonable defaults.
             If no unit count is specified but it's a multi-unit property, infer it from the type.
+            also the input is not from the above examples , just clean it according to the rules.
+            dont keep it as it is just clean it. no abbrevations , no "/" , etc .....
             
             Property type from form to clean:
             {transcript}
