@@ -803,6 +803,8 @@ class AIRephraser:
 
             You must always reformat the input. Never return the raw input.
             Always follow the format exactly.
+            make sure everything is correct , the number of the bedrooms and bathrooms are correct
+            please make sure of it before giving the final answer
             
             Property type from form to clean:
             {transcript}
