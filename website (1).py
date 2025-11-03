@@ -414,8 +414,8 @@ class AudioProcessor:
     @st.cache_resource  # <-- ADDED: Cache the Whisper model
     def _load_model(_self):
         """Load Whisper model on demand"""
-        with st.spinner("🧠 Loading Whisper AI model (medium)... This may take a moment."):
-            model = whisper.load_model("medium")
+        with st.spinner("🧠 Loading Whisper AI model (small)... This may take a moment."):
+            model = whisper.load_model("small")
         return model
     
     def transcribe_audio(self, audio_url: str, status_tracker=None) -> Dict[str, Any]:
@@ -1848,5 +1848,6 @@ if lead_data:
             # Clean up temporary file
             if os.path.exists(temp_file_path):
                 os.unlink(temp_file_path)
+
 
 
