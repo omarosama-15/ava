@@ -699,24 +699,24 @@ class AIRephraser:
             Analyze this conversation transcript and determine the mortgage status of the property.
             
             CRITICAL INSTRUCTIONS:
-            - If seller explicitly states "no mortgage" or "owned free and clear", this is the PRIMARY truth
-            - If dollar amounts are mentioned after "no mortgage", they likely refer to EQUITY, PROPERTY VALUE, or OTHER DEBT
-            - NEVER interpret dollar amounts as mortgage balances if "no mortgage" is confirmed
-            - If there's confusion between "no mortgage" and dollar amounts, prioritize the explicit "no mortgage" statement
-            - Use clear, direct language based on explicit statements
+            - Be VERY specific about mortgage status
+            - put in consider the input value of mortage of the form data , compare it with the transcript and give your final answer 
+            - If mortgage exists, mention any amounts discussed
+            - If owned free and clear, state that clearly
+            - If no mortgage information is discussed, say "No mortgage information discussed"
+            - Use clear, direct language
+            -take in consideration that the whisper may have some errors , so be careful while giving the final answer
+            - Examples of good responses:
+              * "Owned free and clear - no mortgage"
+              * "Mortgage exists - owes approximately $50,000"
+              * "Mortgage exists but amount not specified"
+              * "No mortgage information discussed in the conversation"
+              - dont make the answer to large , keep it simple ,ex : owned and free clear , mortgage exists
 
-            VALID RESPONSES (choose one):
-            - "Owned free and clear - no mortgage" (if seller explicitly states no mortgage)
-            - "Mortgage exists - owes approximately $X" (only if mortgage is explicitly confirmed with amount)
-            - "Mortgage exists but amount not specified" (only if mortgage exists but no amount given)
-            - "Mortgage status unclear - conflicting information" (only if truly contradictory statements)
-            - "No mortgage information discussed" (if no mortgage mentioned)
-            make the answer as short as you can
-            be sure to understand the mortgage situation before returing the final answers
             Transcript:
             {transcript}
             """
-            question = "What is the mortgage status of the property based on explicit statements in the conversation?"
+            question = "What is the mortgage status of the property based on the conversation?"
 
         elif topic_name == "Occupancy Status":
             # --- OCCUPANCY STATUS PROMPT ---
@@ -1848,6 +1848,4 @@ if lead_data:
             # Clean up temporary file
             if os.path.exists(temp_file_path):
                 os.unlink(temp_file_path)
-
-
 
