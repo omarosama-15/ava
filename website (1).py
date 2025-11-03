@@ -1849,5 +1849,3 @@ if lead_data:
             if os.path.exists(temp_file_path):
                 os.unlink(temp_file_path)
 
-
-
