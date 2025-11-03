@@ -711,7 +711,7 @@ class AIRephraser:
             - "Mortgage exists but amount not specified" (only if mortgage exists but no amount given)
             - "Mortgage status unclear - conflicting information" (only if truly contradictory statements)
             - "No mortgage information discussed" (if no mortgage mentioned)
-
+            make the answer as short as you can
             Transcript:
             {transcript}
             """
@@ -1847,4 +1847,5 @@ if lead_data:
             # Clean up temporary file
             if os.path.exists(temp_file_path):
                 os.unlink(temp_file_path)
+
 
