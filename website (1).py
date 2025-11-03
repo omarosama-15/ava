@@ -699,22 +699,23 @@ class AIRephraser:
             Analyze this conversation transcript and determine the mortgage status of the property.
             
             CRITICAL INSTRUCTIONS:
-            - Be VERY specific about mortgage status
-            - If mortgage exists, mention any amounts discussed
-            - If owned free and clear, state that clearly
-            - If no mortgage information is discussed, say "No mortgage information discussed"
-            - Use clear, direct language
-            - Examples of good responses:
-              * "Owned free and clear - no mortgage"
-              * "Mortgage exists - owes approximately $50,000"
-              * "Mortgage exists but amount not specified"
-              * "No mortgage information discussed in the conversation"
-              - dont make the answer to large , keep it simple ,ex : owned and free clear , mortgage exists
+            - If seller explicitly states "no mortgage" or "owned free and clear", this is the PRIMARY truth
+            - If dollar amounts are mentioned after "no mortgage", they likely refer to EQUITY, PROPERTY VALUE, or OTHER DEBT
+            - NEVER interpret dollar amounts as mortgage balances if "no mortgage" is confirmed
+            - If there's confusion between "no mortgage" and dollar amounts, prioritize the explicit "no mortgage" statement
+            - Use clear, direct language based on explicit statements
+
+            VALID RESPONSES (choose one):
+            - "Owned free and clear - no mortgage" (if seller explicitly states no mortgage)
+            - "Mortgage exists - owes approximately $X" (only if mortgage is explicitly confirmed with amount)
+            - "Mortgage exists but amount not specified" (only if mortgage exists but no amount given)
+            - "Mortgage status unclear - conflicting information" (only if truly contradictory statements)
+            - "No mortgage information discussed" (if no mortgage mentioned)
 
             Transcript:
             {transcript}
             """
-            question = "What is the mortgage status of the property based on the conversation?"
+            question = "What is the mortgage status of the property based on explicit statements in the conversation?"
 
         elif topic_name == "Occupancy Status":
             # --- OCCUPANCY STATUS PROMPT ---
