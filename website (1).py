@@ -712,6 +712,7 @@ class AIRephraser:
             - "Mortgage status unclear - conflicting information" (only if truly contradictory statements)
             - "No mortgage information discussed" (if no mortgage mentioned)
             make the answer as short as you can
+            be sure to understand the mortgage situation before returing the final answers
             Transcript:
             {transcript}
             """
@@ -1847,5 +1848,6 @@ if lead_data:
             # Clean up temporary file
             if os.path.exists(temp_file_path):
                 os.unlink(temp_file_path)
+
 
 
