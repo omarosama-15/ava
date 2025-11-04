@@ -272,24 +272,31 @@ class FormParser:
             except ValueError: 
                 pass
         
-        # Extract numeric values
+        # Extract numeric values - FIXED: Handle empty strings properly
         numbers = re.findall(r'([\d,]+\.?\d*)', base_price)
         if numbers:
-            # Find the number with the largest magnitude
-            largest_num_str = max(numbers, key=lambda x: float(x.replace(',', '').replace('$', '')))
-            clean_num_str = largest_num_str.replace(',', '').replace('$', '')
-            try:
-                numeric_value = float(clean_num_str)
+            # Filter out empty strings and handle conversion safely
+            valid_numbers = []
+            for num_str in numbers:
+                clean_num_str = num_str.replace(',', '').replace('$', '').strip()
+                if clean_num_str:  # Only process non-empty strings
+                    try:
+                        numeric_value = float(clean_num_str)
+                        valid_numbers.append((num_str, numeric_value))
+                    except ValueError:
+                        continue
+            
+            if valid_numbers:
+                # Find the number with the largest magnitude
+                largest_num_str, largest_value = max(valid_numbers, key=lambda x: x[1])
                 # Format as integer if whole number, else keep decimals
-                if numeric_value == int(numeric_value):
-                    cleaned_price = f"${int(numeric_value):,}"
+                if largest_value == int(largest_value):
+                    cleaned_price = f"${int(largest_value):,}"
                 else:
-                    cleaned_price = f"${numeric_value:,.2f}"
+                    cleaned_price = f"${largest_value:,.2f}"
                 
                 # Add negotiable back if it was there
                 return f"{cleaned_price} (negotiable)" if is_negotiable else cleaned_price
-            except ValueError: 
-                pass
         
         return price  # Return original if no cleaning applied
     def _clean_property_type(self, prop_type: str) -> str:
