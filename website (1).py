@@ -193,6 +193,10 @@ class FormParser:
                             value.lower() in ['', 'not specified', 'n/a', 'na', 'not available', 'unknown', 'not mentioned', 'not provided', 'none', 'null'] or
                             any(phrase in value.lower() for phrase in ['not mentioned', 'not provided', 'none', 'null', 'not discussed', 'no price', 'no asking'])):
                             return "Waiting for our offer"
+                        
+                        # Check if negotiable is mentioned in the asking price field
+                        if 'negotiable' in value.lower():
+                            return value + " (negotiable)"
                     
                     # For estimates (Zillow, Realtor, Redfin), always return the actual value
                     # even if it says "not specified" - we want to show what was provided
@@ -241,32 +245,35 @@ class FormParser:
         return name.strip().title()
 
     def _clean_price(self, price: str) -> str:
-        """Enhanced price cleaner - only applies 'Waiting for our offer' to asking price"""
+        """Enhanced price cleaner that preserves negotiable notation"""
         if not price: 
-            return price  # Return as-is, don't convert to "Waiting for our offer"
+            return price
         
         price = price.strip()
         
-        # Only apply "Waiting for our offer" if it's explicitly set to that
-        # (this happens in _extract_field for asking price only)
-        if price == "Waiting for our offer":
-            return price
+        # Check if it's already marked as negotiable
+        is_negotiable = "(negotiable)" in price
+        base_price = price.replace("(negotiable)", "").strip()
         
-        # For all other prices (estimates), just clean them normally
+        # Only apply "Waiting for our offer" if it's explicitly set to that
+        if base_price == "Waiting for our offer":
+            return base_price
+        
         # Remove form prefixes and clean up
-        price = re.sub(r'^◇.*Estimate\s*:-\s*', '', price)
-        price = re.sub(r'^[^a-zA-Z0-9$]*', '', price)
+        base_price = re.sub(r'^◇.*Estimate\s*:-\s*', '', base_price)
+        base_price = re.sub(r'^[^a-zA-Z0-9$]*', '', base_price)
         
         # Handle "K" notation
-        if price.upper().endswith('K'):
+        if base_price.upper().endswith('K'):
             try:
-                numeric_value = float(price.upper().replace('K', '').replace('$', '').replace(',', '').strip())
-                return f"${numeric_value * 1000:,.0f}"
+                numeric_value = float(base_price.upper().replace('K', '').replace('$', '').replace(',', '').strip())
+                cleaned_price = f"${numeric_value * 1000:,.0f}"
+                return f"{cleaned_price} (negotiable)" if is_negotiable else cleaned_price
             except ValueError: 
                 pass
         
         # Extract numeric values
-        numbers = re.findall(r'([\d,]+\.?\d*)', price)
+        numbers = re.findall(r'([\d,]+\.?\d*)', base_price)
         if numbers:
             # Find the number with the largest magnitude
             largest_num_str = max(numbers, key=lambda x: float(x.replace(',', '').replace('$', '')))
@@ -275,13 +282,16 @@ class FormParser:
                 numeric_value = float(clean_num_str)
                 # Format as integer if whole number, else keep decimals
                 if numeric_value == int(numeric_value):
-                    return f"${int(numeric_value):,}"
+                    cleaned_price = f"${int(numeric_value):,}"
                 else:
-                    return f"${numeric_value:,.2f}"
+                    cleaned_price = f"${numeric_value:,.2f}"
+                
+                # Add negotiable back if it was there
+                return f"{cleaned_price} (negotiable)" if is_negotiable else cleaned_price
             except ValueError: 
                 pass
         
-        return price  # Return original if no cleaning applied   
+        return price  # Return original if no cleaning applied
     def _clean_property_type(self, prop_type: str) -> str:
         """ V20: Simplified - just extract basic info, AI will do the cleaning """
         original = prop_type.strip()
@@ -527,7 +537,7 @@ class AudioProcessor:
 
     def _calculate_transcription_time(self, audio_duration: int) -> int:
         """Calculate estimated transcription time in seconds"""
-        base_time = 30  # Base processing time
+        base_time = 45  # Base processing time
         return base_time + int(audio_duration * 1.5)
 
 # --- ConversationSummarizer Class (Unchanged) ---
